@@ -14,3 +14,11 @@
 Присутствует возможность выбора формата для отображения количества углеводов.
 
 В обоих файлах данные выровнены и готовы к печати.
+
+### Полезные ресурсы
+
+https://nightscout.github.io/ - Документация Nightscout.
+
+https://github.com/zreptil/nightscout-reporter - Веб-приложение для создания PDF-документов на основе данных Nightscout.
+
+https://xdrip.readthedocs.io/en/latest/use/interapp/ - Использование веб-сервисов в xDrip+
