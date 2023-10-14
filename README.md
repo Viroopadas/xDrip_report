@@ -22,3 +22,7 @@ https://nightscout.github.io/ - Документация Nightscout.
 https://github.com/zreptil/nightscout-reporter - Веб-приложение для создания PDF-документов на основе данных Nightscout.
 
 https://xdrip.readthedocs.io/en/latest/use/interapp/ - Использование веб-сервисов в xDrip+
+
+https://www.youtube.com/watch?v=VzdRIhULSx0 - Быстрая настройка NightScout в Heroku
+
+https://diadim.com.ua/dexcom/dexcom-detailed-instructions/ - Настройка xDrip+ на телефоне
