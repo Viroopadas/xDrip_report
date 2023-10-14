@@ -22,5 +22,5 @@ exe = EXE(
     strip=None,
     upx=True,
     console=False,
-    icon=['D:\\dev\\my\\rep_insulin\\img\\icon.ico'],
+    icon=['D:\\dev\\my\\rep_insulin\\icon.ico'],
 )
