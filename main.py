@@ -1,6 +1,7 @@
 import csv
 import os
 import sys
+import re
 from datetime import datetime, timedelta, time
 import xlsxwriter
 import PySimpleGUI as sg
@@ -8,13 +9,20 @@ import win32com.client as win32
 from images import logo_path
 
 
+folder_path = os.path.dirname(sys.argv[0])
+
 def create_report(file_name: str, xe_type:int):
     # Преобразуем файл в словарь
     data = []
-    with open(file_name, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f, delimiter=';')
-        for row in reader:
-            data.append(row)
+    try:
+        with open(file_name, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f, delimiter=';')
+            for row in reader:
+                data.append(row)
+    except:
+        window['_OUTPUT_'].update('')
+        sg.popup('Файл CSV с таким именем не найден.', icon=logo_path)
+        return False
             
     with open(file_name, newline='', encoding='utf-8') as f:
         try:
@@ -115,8 +123,18 @@ def create_report(file_name: str, xe_type:int):
 
         blocks[date] = result_block
 
+    # Перебираем файлы и находим максимальное значение x
+    x = 1
+    pattern = re.compile(r'report_(\d+)\.xlsx')
+    files = os.listdir()
+    for file in files:
+        match = pattern.match(file)
+        if match:
+            number = int(match.group(1))
+            x = max(x, number + 1)
+
     # Создаем файл Excel
-    workbook = xlsxwriter.Workbook('report.xlsx')
+    workbook = xlsxwriter.Workbook(f'report_{x}.xlsx')
     date_format = workbook.add_format({'num_format': 'dd.mm.yyyy'})
 
     f_title = workbook.add_format({'border': True, 'align': 'center', 'bold': True, 'text_wrap': True, 'valign': 'vcenter'})
@@ -179,14 +197,15 @@ def create_report(file_name: str, xe_type:int):
 
     # Конвертация файла Excel в файл PDF
     try:
-        excel_file = os.path.abspath('report.xlsx')
-        pdf_file = os.path.abspath('report.pdf')
+        excel_file = os.path.abspath(f'report_{x}.xlsx')
+        pdf_file = os.path.abspath(f'report_{x}.pdf')
         excel = win32.Dispatch('Excel.Application')
         wb = excel.Workbooks.Open(excel_file)
         wb.ExportAsFixedFormat(0, pdf_file)
         wb.Close()
         excel.Quit()
     except:
+        window['_OUTPUT_'].update('')
         sg.popup('Ошибка при создании файла PDF. Обратитесь к разработчикам.', icon=logo_path)
         return False
 
@@ -197,14 +216,12 @@ def create_report(file_name: str, xe_type:int):
     # shutil.move(file, "read_files/" + file)
 
 
+# Находим файл для чтения
 files = os.listdir()
 file_name = ''
-folder_path = os.path.dirname(sys.argv[0])
-
-# Находим файл для чтения
 for file in files:
     if file.startswith("export"):
-        file_name = file
+        file_name = os.path.join(os.getcwd(), file)
         break
 
 sg.theme('LightGreen')
@@ -212,7 +229,7 @@ sg.theme('LightGreen')
 xe_types = {'Углеводы, г.': 1, '1 ХЕ = 10 У': 10, '1 ХЕ = 12 У': 12, '1 ХЕ = 15 У': 15}
 
 layout = [[sg.Text('Выберите файл .CSV')], 
-          [sg.InputText(), sg.FileBrowse(file_types=(("CSV Files", "*.csv"),), initial_folder=folder_path)],
+          [sg.InputText(file_name), sg.FileBrowse(file_types=(("CSV Files", "*.csv"),), initial_folder=folder_path)],
           [sg.Text('Формат отображения количества углеводов:'),
            sg.Combo(list(xe_types.keys()), default_value='Углеводы, г.', key='_XE_TYPE_')],
           [sg.Submit(), sg.Text('', key='_OUTPUT_')]]
@@ -229,7 +246,7 @@ while True:
         window['_OUTPUT_'].update('Ожидайте...', text_color='red')
         window.refresh()
 
-        is_ready = create_report(file_name=values['Browse'], xe_type=values['_XE_TYPE_'])
+        is_ready = create_report(file_name=values[0], xe_type=values['_XE_TYPE_'])
 
         if is_ready:
             window['_OUTPUT_'].update('Готово! Файлы PDF и EXCEL созданы в той же папке.', text_color='red')
