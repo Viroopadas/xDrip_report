@@ -234,7 +234,7 @@ layout = [[sg.Text('Выберите файл .CSV')],
            sg.Combo(list(xe_types.keys()), default_value='Углеводы, г.', key='_XE_TYPE_')],
           [sg.Submit(), sg.Text('', key='_OUTPUT_')]]
 
-window = sg.Window('xDrip+ (Создание отчета в Excel)', layout, icon=logo_path)
+window = sg.Window('xDrip+ (Создание отчета)', layout, icon=logo_path)
 
 while True:
     event, values = window.read()
