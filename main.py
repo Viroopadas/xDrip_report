@@ -252,3 +252,4 @@ while True:
             window['_OUTPUT_'].update('Готово! Файлы PDF и EXCEL созданы в той же папке.', text_color='red')
 
 window.close()
+
