@@ -3,6 +3,8 @@
 
 Результатом её работы будут 2 созданных файла: **PDF** и **Excel**.
 
+ОС: **Windows**
+
 ![image](https://github.com/AnandSamir/xDrip_insulin_report/assets/40866955/65211dbb-09bc-444c-b18c-1374180cb626)
 
 На одном листе располагается информация за **3 дня**:
