@@ -11,14 +11,12 @@ from images import logo_path
 
 folder_path = os.path.dirname(sys.argv[0])
 
-def create_report(file_name: str, xe_type:int):
+def create_report(file_name: str, xe_type: dict, gk_type: dict):
     # Преобразуем файл в словарь
     data = []
     try:
         with open(file_name, newline='', encoding='utf-8') as f:
-            reader = csv.DictReader(f, delimiter=';')
-            for row in reader:
-                data.append(row)
+            pass
     except:
         window['_OUTPUT_'].update('')
         sg.popup('Файл CSV с таким именем не найден.', icon=logo_path)
@@ -45,8 +43,8 @@ def create_report(file_name: str, xe_type:int):
             continue
 
         date = datetime.strptime(row['DAY'], '%d.%m.%Y')
-        glucose_level = f"{(float(row['UDT_CGMS']) / 18.02):.1f}" if row['UDT_CGMS'] else None
-        carb = f"{(float(row['CH_GR']) / xe_types[xe_type]):.1f}" if row['CH_GR'] else None
+        glucose_level = (float(row['UDT_CGMS']) / gk_type['value']) if row['UDT_CGMS'] else None
+        carb = f"{(float(row['CH_GR']) / xe_type['value']):.1f}" if row['CH_GR'] else None
         
         if date not in blocks:
             blocks[date] = []
@@ -91,7 +89,9 @@ def create_report(file_name: str, xe_type:int):
 
         for row in block:
             current_time = datetime.combine(date, datetime.strptime(row['time'], '%H:%M').time())
-            glucose = float(row['glucose_level'] or 0)
+            glucose = row['glucose_level'] or 0
+            if gk_type['value'] == 1:
+                glucose /= 18.02
 
             if current_time.time() < time(7, 0) or current_time.time() > time(21, 0):
                 amount_points = 0
@@ -149,7 +149,7 @@ def create_report(file_name: str, xe_type:int):
             ws = workbook.add_worksheet(str(date.day))
         
         # Задаем ширину столбцов
-        for i, width in enumerate([6, 6, 6, 6, 20, 2]):
+        for i, width in enumerate([6, 7, 6, 6, 20, 2]):
             ws.set_column(col+i, col+i, width)
         
         # Альбомная ориентация
@@ -170,20 +170,23 @@ def create_report(file_name: str, xe_type:int):
         ws.merge_range(row, col, row, col+4, f'Дата: {str(date)[:10]}', f_title)
         row += 1
 
-        header = ['Время', 'Ур-нь ГК', 'Инсу- лин', xe_type, 'Примечание']
+        header = ['Время', f'Ур-нь ГК, {gk_type["name"]}', 'Инсу- лин', xe_type['name'], 'Примечание']
         for i, col_name in enumerate(header):
             ws.write(1, col+i, col_name, f_title)
         row += 1
 
         for row_data in rows:
             if row_data['glucose_level']:
-                glucose = float(row_data['glucose_level'])
+                glucose = row_data['glucose_level']
+                if gk_type['value'] == 1:
+                    glucose /= 18.02
+                
                 style = f_value_yellow if glucose <= 3.9 or glucose >= 15 else f_value_center
             else:
                 style = f_value_center
 
             ws.write(row, col, row_data['time'], style)
-            ws.write(row, col+1, row_data['glucose_level'], style)
+            ws.write(row, col+1, f"{row_data['glucose_level']:.1f}", style)
             ws.write(row, col+2, row_data['insulin'], f_title)
             ws.write(row, col+3, row_data['carb'], f_value_center)
             ws.write(row, col+4, row_data['remark'], f_value)
@@ -227,9 +230,12 @@ for file in files:
 sg.theme('LightGreen')
 
 xe_types = {'Углеводы, г.': 1, '1 ХЕ = 10 У': 10, '1 ХЕ = 12 У': 12, '1 ХЕ = 15 У': 15}
+gk_types = {'mmol/L': 18.02, 'mg/dL': 1}
 
 layout = [[sg.Text('Выберите файл .CSV')], 
           [sg.InputText(file_name), sg.FileBrowse(file_types=(("CSV Files", "*.csv"),), initial_folder=folder_path)],
+          [sg.Text('Формат отображения уровня глюкозы:'),
+           sg.Combo(list(gk_types.keys()), default_value='mmol/L', key='_GK_TYPE_')],
           [sg.Text('Формат отображения количества углеводов:'),
            sg.Combo(list(xe_types.keys()), default_value='Углеводы, г.', key='_XE_TYPE_')],
           [sg.Submit(), sg.Text('', key='_OUTPUT_')]]
@@ -245,8 +251,11 @@ while True:
     elif event == 'Submit':
         window['_OUTPUT_'].update('Ожидайте...', text_color='red')
         window.refresh()
+        
+        xe_type = {'name': values['_XE_TYPE_'], 'value': xe_types[values['_XE_TYPE_']]}
+        gk_type = {'name': values['_GK_TYPE_'], 'value': gk_types[values['_GK_TYPE_']]}
 
-        is_ready = create_report(file_name=values[0], xe_type=values['_XE_TYPE_'])
+        is_ready = create_report(file_name=values[0], xe_type=xe_type, gk_type=gk_type)
 
         if is_ready:
             window['_OUTPUT_'].update('Готово! Файлы PDF и EXCEL созданы в той же папке.', text_color='red')
