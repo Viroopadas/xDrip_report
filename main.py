@@ -43,7 +43,7 @@ def create_report(file_name: str, xe_type: dict, gk_type: dict):
             continue
 
         date = datetime.strptime(row['DAY'], '%d.%m.%Y')
-        glucose_level = (float(row['UDT_CGMS']) / gk_type['value']) if row['UDT_CGMS'] else None
+        glucose_level = (float(row['UDT_CGMS']) / gk_type['value']) if row['UDT_CGMS'] else 0
         carb = f"{(float(row['CH_GR']) / xe_type['value']):.1f}" if row['CH_GR'] else None
         
         if date not in blocks:
@@ -74,6 +74,8 @@ def create_report(file_name: str, xe_type: dict, gk_type: dict):
                 elif row['remark']:
                     prev_row['carb'] = prev_row['carb'] or row['carb']
                     prev_row['remark'] = prev_row['remark'] or row['remark']
+                elif row['carb'] and not row['insulin'] and not row['remark']:
+                    prev_row['carb'] = prev_row['carb'] or row['carb']
                 else:
                     merged_block.append(row)
         
@@ -89,14 +91,14 @@ def create_report(file_name: str, xe_type: dict, gk_type: dict):
 
         for row in block:
             current_time = datetime.combine(date, datetime.strptime(row['time'], '%H:%M').time())
-            glucose = row['glucose_level'] or 0
+            glucose = row['glucose_level']
             if gk_type['value'] == 1:
                 glucose /= 18.02
 
             if current_time.time() < time(7, 0) or current_time.time() > time(21, 0):
                 amount_points = 0
 
-            if row['remark']:
+            if row['remark'] or row['carb']:
                 result_block.append(row)
             elif row['insulin']:
                 result_block.append(row)
@@ -185,8 +187,10 @@ def create_report(file_name: str, xe_type: dict, gk_type: dict):
             else:
                 style = f_value_center
 
+            glucose_level = f"{row_data['glucose_level']:.1f}" if row_data['glucose_level'] else None
+            
             ws.write(row, col, row_data['time'], style)
-            ws.write(row, col+1, f"{row_data['glucose_level']:.1f}", style)
+            ws.write(row, col+1, glucose_level, style)
             ws.write(row, col+2, row_data['insulin'], f_title)
             ws.write(row, col+3, row_data['carb'], f_value_center)
             ws.write(row, col+4, row_data['remark'], f_value)
