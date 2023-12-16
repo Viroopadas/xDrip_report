@@ -148,7 +148,8 @@ def create_report(file_name: str, xe_type: dict, gk_type: dict):
 
     for date, rows in blocks.items():
         if not col:
-            ws = workbook.add_worksheet(str(date.day))
+            date_str = date.strftime("%d.%m.%Y")
+            ws = workbook.add_worksheet(date_str)
         
         # Задаем ширину столбцов
         for i, width in enumerate([6, 7, 6, 6, 20, 2]):
